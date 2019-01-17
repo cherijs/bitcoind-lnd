@@ -5,17 +5,13 @@ ENV GODEBUG netdns=cgo
 ENV GOPATH=/go
 ENV PATH=$PATH:$GOPATH/bin
 
-# BUG 
+# BUG - make fails if this env ins not 0
+# https://github.com/golang/go/issues/26988
 ENV CGO_ENABLED=0 
-
 
 RUN apk add --no-cache git make
 
 RUN go get -d github.com/lightningnetwork/lnd && cd $GOPATH/src/github.com/lightningnetwork/lnd && make &&  make install
-
-RUN go version
-RUN go env GOROOT GOPATH
-
 
 FROM alpine
 

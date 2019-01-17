@@ -36,7 +36,7 @@ services:
        # default cmd in Dockerfile
       --debuglevel=debug
       --maxpendingchannels=10
-      # --externalip=XXXXX
+      --externalip=88.135.143.213
       --rpclisten=0.0.0.0:10009
       --color=#4126a7
       --alias=MDMA
