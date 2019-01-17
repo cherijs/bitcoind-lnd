@@ -1,0 +1,70 @@
+version: '3'
+services:
+  btc:
+    build: ./bitcoind
+    image: cherijs/bitcoind:latest
+    container_name: btc
+    restart: always
+    expose:
+      - "8333"
+      - "28333"
+      - "28332"
+      - "18333"
+      - "18332"
+    ports:
+      - "8333:8333"
+      - "28333:28333"
+      - "28332:28332"
+      - "18333:18333"
+      - "18332:18332"
+    volumes:
+      # - ./bitcoind/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro
+      - bitcoin:/root/.bitcoin/ # data persistence
+  lnd:
+    build: ./lnd
+    image: cherijs/lnd:latest
+    container_name: lnd
+    # restart: always
+    ports:
+      - "9735:9735"
+      - "10009:10009"
+    volumes:
+      # - ./lnd/lnd.conf:/root/.lnd/lnd.conf:ro
+      - bitcoin:/root/.bitcoin/
+      - lnd:/root/.lnd/ # data persistence
+    command:
+       # default cmd in Dockerfile
+      --debuglevel=debug
+      --maxpendingchannels=10
+      # --externalip=XXXXX
+      --rpclisten=0.0.0.0:10009
+      --color=#4126a7
+      --alias=MDMA
+      --bitcoin.active
+      --bitcoin.testnet
+      --bitcoin.node=bitcoind
+      --bitcoind.rpchost=btc
+      --bitcoind.rpcuser=test
+      --bitcoind.rpcpass=test
+      --bitcoind.zmqpubrawblock=tcp://btc:28332
+      --bitcoind.zmqpubrawtx=tcp://btc:28333
+      --adminmacaroonpath=/root/.lnd/admin.macaroon
+      --readonlymacaroonpath=/root/.lnd/readonly.macaroon
+      --invoicemacaroonpath=/root/.lnd/invoice.macaroon
+      --autopilot.active
+      --autopilot.maxchannels=5
+      --autopilot.allocation=0.6
+
+volumes:
+  bitcoin:
+    driver: local
+    driver_opts:
+      type: none
+      device: "/Users/cherijs/.docker_volumes/.bitcoin"
+      o: bind
+  lnd:
+    driver: local
+    driver_opts:
+      type: none
+      device: "/Users/cherijs/.docker_volumes/.lnd"
+      o: bind
