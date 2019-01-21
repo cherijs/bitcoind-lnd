@@ -26,7 +26,7 @@ services:
     build: ./lnd
     image: cherijs/lnd:latest
     container_name: lnd
-    # restart: always
+    restart: always
     ports:
     - "10009:10009"
 #    - "9735:9735"
