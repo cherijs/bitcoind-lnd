@@ -19,6 +19,7 @@ os.environ["GRPC_SSL_CIPHER_SUITES"] = 'HIGH+ECDSA'
 
 LND_DOCKER = {
     'name': 'LND',
+    'node_port': 9009,
     'rpc_port': 10009,
     'tls_cert': '/Users/cherijs/.docker_volumes/.lnd/tls.cert',
     'admin_macaroon': '/Users/cherijs/.docker_volumes/.lnd/data/chain/bitcoin/regtest/admin.macaroon'
@@ -26,6 +27,7 @@ LND_DOCKER = {
 
 ALICE_DOCKER = {
     'name': 'Alice',
+    'node_port': 9010,
     'rpc_port': 10010,
     'tls_cert': '/Users/cherijs/.docker_volumes/simnet/alice/tls.cert',
     'admin_macaroon': '/Users/cherijs/.docker_volumes/simnet/alice/data/chain/bitcoin/regtest/admin.macaroon'
@@ -33,6 +35,7 @@ ALICE_DOCKER = {
 
 BOB_DOCKER = {
     'name': 'Bob',
+    'node_port': 9011,
     'rpc_port': 10011,
     'tls_cert': '/Users/cherijs/.docker_volumes/simnet/bob/tls.cert',
     'admin_macaroon': '/Users/cherijs/.docker_volumes/simnet/bob/data/chain/bitcoin/regtest/admin.macaroon'
@@ -55,12 +58,15 @@ class LndRpc(object):
 
 
 class LndNode(object):
+    identity_pubkey = None
+
     def __repr__(self):
         return self.displayName
 
     def __init__(self, config):
         self.displayName = config['name']
         self.rpc = LndRpc(config)
+        self.identity_pubkey = self.getinfo().identity_pubkey
 
     def ping(self):
         try:
@@ -70,10 +76,17 @@ class LndNode(object):
             logger.exception(e)
             return False
 
-    def peers(self):
+    def list_peers(self):
         try:
             peers = self.rpc.stub.ListPeers(ln.ListPeersRequest()).peers
             return [p.pub_key for p in peers]
+        except Exception as e:
+            logger.exception(e)
+
+    def getinfo(self):
+        try:
+            response = self.rpc.stub.GetInfo(ln.GetInfoRequest())
+            return response
         except Exception as e:
             logger.exception(e)
 
@@ -101,7 +114,7 @@ class LndNode(object):
     def list_channels(self):
         try:
             response = self.rpc.stub.ListChannels(ln.ListChannelsRequest())
-            return response
+            return response.channels
         except Exception as e:
             logger.exception(e)
 
@@ -137,7 +150,7 @@ class LndNode(object):
                 amt=invoice_details.num_satoshis,
                 payment_hash_string=invoice_details.payment_hash,
                 final_cltv_delta=144  # final_cltv_delta=144 is default for lnd
-            );
+            )
             response = self.rpc.stub.SendPaymentSync(request)
             logger.warning(response)
         except Exception as e:
@@ -156,14 +169,51 @@ class LndNode(object):
         except Exception as e:
             logger.exception(e)
 
+    def connect_peer(self, pubkey, host, permanent=False):
+        return self.rpc.stub.ConnectPeer(
+            ln.ConnectPeerRequest(
+                addr=ln.LightningAddress(pubkey=pubkey, host=host), perm=permanent
+            )
+        )
 
+    def open_channel(self, **kwargs):
+        # TODO check if channel already opened
+        try:
+            request = ln.OpenChannelRequest(**kwargs)
+            response = self.rpc.stub.OpenChannel(request)
+            return response
+        except Exception as e:
+            logger.exception(e)
+
+
+lnd_node = LndNode(LND_DOCKER)
 alice_node = LndNode(ALICE_DOCKER)
 bob_node = LndNode(BOB_DOCKER)
 
 logger.debug(alice_node.wallet_balance())
 logger.debug(bob_node.wallet_balance())
 
-# logger.debug(alice_node.list_channels())
+# docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' lnd
+
+
+# Connect Alice to LND node
+if lnd_node.identity_pubkey not in alice_node.list_peers():
+    alice_node.connect_peer(pubkey=lnd_node.getinfo().identity_pubkey, host='172.29.0.2')
+
+# Connect Bob to LND node
+if lnd_node.identity_pubkey not in bob_node.list_peers():
+    bob_node.connect_peer(pubkey=lnd_node.getinfo().identity_pubkey, host='172.29.0.2')
+
+# Alice open channel to lnd
+logger.debug(lnd_node.list_channels())
+# https://api.lightning.community/#openchannelsync
+for resp in alice_node.open_channel(
+        node_pubkey=bytes.fromhex(lnd_node.identity_pubkey),
+        node_pubkey_string=lnd_node.identity_pubkey,
+        local_funding_amount=100000,  # The number of satoshis the wallet should commit to the channel
+        push_sat=1000,  # The number of satoshis to push to the remote side as part of the initial commitment state
+):
+    print(resp)
 
 # logger.debug(node.list_invoices())
 # logger.debug(node.add_invoice(ammount=100))

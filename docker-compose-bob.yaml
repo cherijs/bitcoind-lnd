@@ -7,10 +7,26 @@ services:
     restart: always
     ports:
       - "10011:10009"
+      - "9011:9735"
     volumes:
       - ./lnd/lnd.conf:/root/.lnd/lnd.conf
       - bitcoin:/root/.bitcoin/
       - lnd_bob:/root/.lnd/ # data persistence
+    command:
+      --noseedbackup
+      --debuglevel=debug
+      --maxpendingchannels=10
+      --rpclisten=0.0.0.0:10009
+      --color=#4126a7
+      --alias=Bob
+      --bitcoin.active
+      --bitcoin.regtest
+      --bitcoin.node=bitcoind
+      --bitcoind.rpchost=btc
+      --bitcoind.rpcuser=test
+      --bitcoind.rpcpass=test
+      --bitcoind.zmqpubrawblock=tcp://btc:28332
+      --bitcoind.zmqpubrawtx=tcp://btc:28333
 
 
 volumes:

@@ -29,6 +29,7 @@ services:
     restart: always
     ports:
     - "10009:10009"
+    - "9009:9735"
 #    - "9735:9735"
     volumes:
     - ./lnd/lnd.conf:/root/.lnd/lnd.conf
@@ -46,7 +47,7 @@ services:
       --maxpendingchannels=10
       --rpclisten=0.0.0.0:10009
       --color=#4126a7
-      --alias=MDMA
+      --alias=LND
       --bitcoin.active
       --bitcoin.regtest
       --bitcoin.node=bitcoind
