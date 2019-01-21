@@ -7,12 +7,12 @@ then restart lnd container, because btc container now is initialised and lnd now
 docker-compose restart lnd
 ```
 
-Connect to lnd
+##### Connect to lnd
 ```bash
 docker exec -i -t lnd bash
 ```
 
-check wallet ballance
+##### check wallet ballance
 
 $lnd `lncli -n=regtest walletbalance`
 
@@ -24,7 +24,7 @@ $lnd `lncli -n=regtest walletbalance`
 }
 ```
 
-get wallet address
+##### get wallet address
 $lnd `lncli -n=regtest newaddress np2wkh`
 ```json
 {
@@ -39,19 +39,23 @@ In new terminal window
 docker exec -i -t btc bash
 ```
 
-check balance
+##### check balance
 
 $btc `bitcoin-cli getwalletinfo`
 
+### Mine some bitcoins
 generate 400 blocks
 
 $btc `bitcoin-cli generate 400`
 
-Send bitcoin to LN wallet
+##### check balance
+$btc `bitcoin-cli getwalletinfo`
+
+### Send bitcoin to LN wallet
 
 $btc `bitcoin-cli sendtoaddress 2NC4FMaJmgoXF6EPodAwokdEeMxFnNgerom 1 "My first Bitcoin"`
 
-Check LN wallet balance in lnd terminal
+##### Check LN wallet balance in lnd terminal
 
 $lnd `lncli -n=regtest walletbalance`
 ```json
@@ -62,11 +66,11 @@ $lnd `lncli -n=regtest walletbalance`
 }
 ```
 
-Generate 1 bock on btc
+##### Generate 1 bock on btc
 
 $btc `bitcoin-cli generate 1`
 
-Check LN wallet balance
+##### Check LN wallet balance
 
 $lnd `lncli -n=regtest walletbalance`
 ```json
