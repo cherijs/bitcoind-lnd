@@ -47,8 +47,8 @@ class LndRpc(object):
 class LndNode(object):
     displayName = 'lnd'
 
-    def __init__(self):
-        self.rpc = LndRpc(DOCKER)
+    def __init__(self, config):
+        self.rpc = LndRpc(config)
 
     def ping(self):
         try:
@@ -140,7 +140,7 @@ class LndNode(object):
             logger.exception(e)
 
 
-node = LndNode()
+node = LndNode(DOCKER)
 logger.debug(node.wallet_balance())
 logger.debug(node.list_channels())
 logger.debug(node.list_invoices())
