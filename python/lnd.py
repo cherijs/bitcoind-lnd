@@ -46,7 +46,7 @@ class LndRpc(object):
         auth_credentials = grpc.metadata_call_credentials(self.metadata_callback)
         combined_credentials = grpc.composite_channel_credentials(cred, auth_credentials)
         channel = grpc.secure_channel(f'localhost:{config["rpc_port"]}', combined_credentials)
-        logger.info(f'CONNECTING TO {config["name"]}:  localhost:{config["rpc_port"]}\n')
+        logger.info(f'CONNECTING TO {config["name"]}:  localhost:{config["rpc_port"]}')
         self.macaroon = codecs.encode(open(config['admin_macaroon'], 'rb').read(), 'hex')
         self.stub = lnrpc.LightningStub(channel)
 
@@ -55,9 +55,11 @@ class LndRpc(object):
 
 
 class LndNode(object):
-    displayName = 'lnd'
+    def __repr__(self):
+        return self.displayName
 
     def __init__(self, config):
+        self.displayName = config['name']
         self.rpc = LndRpc(config)
 
     def ping(self):
@@ -78,7 +80,12 @@ class LndNode(object):
     def wallet_balance(self):
         try:
             response = self.rpc.stub.WalletBalance(ln.WalletBalanceRequest())
-            return response
+            return {
+                'node': self.displayName,
+                'total_balance': response.total_balance,
+                'confirmed_balance': response.confirmed_balance,
+                'unconfirmed_balance': response.unconfirmed_balance,
+            }
         except Exception as e:
             logger.exception(e)
 
@@ -150,10 +157,15 @@ class LndNode(object):
             logger.exception(e)
 
 
-node = LndNode(ALICE_DOCKER)
-logger.debug(node.wallet_balance())
-logger.debug(node.list_channels())
-logger.debug(node.list_invoices())
+alice_node = LndNode(ALICE_DOCKER)
+bob_node = LndNode(BOB_DOCKER)
+
+logger.debug(alice_node.wallet_balance())
+logger.debug(bob_node.wallet_balance())
+
+# logger.debug(alice_node.list_channels())
+
+# logger.debug(node.list_invoices())
 # logger.debug(node.add_invoice(ammount=100))
 # logger.debug(node.invoice_subscription(3))
 # logger.debug(node.decode_pay_request(
