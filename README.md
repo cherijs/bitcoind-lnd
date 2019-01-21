@@ -82,7 +82,60 @@ $lnd `lncli -n=regtest walletbalance`
 ```
 
 So we have a bitcoin in our LN wallet, lets open some channels..
+Or first create two more lnd nodes - Alice and Bob
 
+```bash
+docker-compose -f docker-compose.yaml -f docker-compose-alice.yaml run -d --name alice lnd
+docker-compose -f docker-compose.yaml -f docker-compose-bob.yaml run -d --name bob lnd
+```
+
+##### Alice
+
+New terminal
+
+`docker exec -i -t alice bash`
+
+$bob `lncli -n=regtest walletbalance`
+
+$bob `lncli -n=regtest newaddress np2wkh`
+
+copy bobs Alices address
+
+##### BTC container
+
+$btc `bitcoin-cli sendtoaddress ALICE_ADDRESS 1 "Alices first Bitcoin"`
+
+$btc `bitcoin-cli generate 1`
+
+$bob `lncli -n=regtest walletbalance`
+
+Now Bob have 1 bitcoin ;)
+
+##### Bob
+
+New terminal
+
+`docker exec -i -t bob bash`
+
+$bob `lncli -n=regtest walletbalance`
+
+$bob `lncli -n=regtest newaddress np2wkh`
+
+copy Bobs btc address
+
+##### BTC container
+
+$btc `bitcoin-cli sendtoaddress BOBS_ADDRESS 1 "Bobs first Bitcoin"`
+
+$btc `bitcoin-cli generate 1`
+
+$bob `lncli -n=regtest walletbalance`
+
+Now Alice have 1 bitcoin ;)
+
+
+## We have 3 lnd nodes lnd | bob | alice
+Now we can make channels...
 ----
 
 

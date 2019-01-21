@@ -1,0 +1,28 @@
+version: '3'
+services:
+  lnd:
+    build: ./lnd
+    image: cherijs/lnd:latest
+    container_name: alice
+    restart: always
+    ports:
+    - "10010:10009"
+    volumes:
+    - ./lnd/lnd.conf:/root/.lnd/lnd.conf
+    - bitcoin:/root/.bitcoin/
+    - lnd_alice:/root/.lnd/ # data persistence
+
+
+volumes:
+  bitcoin:
+    driver: local
+    driver_opts:
+      type: none
+      device: "/Users/cherijs/.docker_volumes/.bitcoin"
+      o: bind
+  lnd_alice:
+    driver: local
+    driver_opts:
+      type: none
+      device: "/Users/cherijs/.docker_volumes/simnet/alice"
+      o: bind
