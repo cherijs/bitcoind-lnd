@@ -16,16 +16,26 @@ logger = logging.getLogger('main')
 os.environ["GRPC_SSL_CIPHER_SUITES"] = 'HIGH+ECDSA'
 # os.environ["GRPC_SSL_CIPHER_SUITES"] = 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256'
 
-LOCAL = {
-    'rpc_port': 10009,
-    'tls_cert': 'tls.cert',
-    'admin_macaroon': 'admin.macaroon'
-}
 
-DOCKER = {
+LND_DOCKER = {
+    'name': 'LND',
     'rpc_port': 10009,
     'tls_cert': '/Users/cherijs/.docker_volumes/.lnd/tls.cert',
     'admin_macaroon': '/Users/cherijs/.docker_volumes/.lnd/data/chain/bitcoin/regtest/admin.macaroon'
+}
+
+ALICE_DOCKER = {
+    'name': 'Alice',
+    'rpc_port': 10010,
+    'tls_cert': '/Users/cherijs/.docker_volumes/simnet/alice/tls.cert',
+    'admin_macaroon': '/Users/cherijs/.docker_volumes/simnet/alice/data/chain/bitcoin/regtest/admin.macaroon'
+}
+
+BOB_DOCKER = {
+    'name': 'Bob',
+    'rpc_port': 10011,
+    'tls_cert': '/Users/cherijs/.docker_volumes/simnet/bob/tls.cert',
+    'admin_macaroon': '/Users/cherijs/.docker_volumes/simnet/bob/data/chain/bitcoin/regtest/admin.macaroon'
 }
 
 
@@ -36,7 +46,7 @@ class LndRpc(object):
         auth_credentials = grpc.metadata_call_credentials(self.metadata_callback)
         combined_credentials = grpc.composite_channel_credentials(cred, auth_credentials)
         channel = grpc.secure_channel(f'localhost:{config["rpc_port"]}', combined_credentials)
-        logger.info(f'CONNECTING TO: localhost:{config["rpc_port"]}\n')
+        logger.info(f'CONNECTING TO {config["name"]}:  localhost:{config["rpc_port"]}\n')
         self.macaroon = codecs.encode(open(config['admin_macaroon'], 'rb').read(), 'hex')
         self.stub = lnrpc.LightningStub(channel)
 
@@ -140,7 +150,7 @@ class LndNode(object):
             logger.exception(e)
 
 
-node = LndNode(DOCKER)
+node = LndNode(ALICE_DOCKER)
 logger.debug(node.wallet_balance())
 logger.debug(node.list_channels())
 logger.debug(node.list_invoices())

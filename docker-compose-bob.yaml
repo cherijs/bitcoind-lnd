@@ -6,11 +6,11 @@ services:
     container_name: bob
     restart: always
     ports:
-    - "10011:10009"
+      - "10011:10009"
     volumes:
-    - ./lnd/lnd.conf:/root/.lnd/lnd.conf
-    - bitcoin:/root/.bitcoin/
-    - lnd_bob:/root/.lnd/ # data persistence
+      - ./lnd/lnd.conf:/root/.lnd/lnd.conf
+      - bitcoin:/root/.bitcoin/
+      - lnd_bob:/root/.lnd/ # data persistence
 
 
 volumes:

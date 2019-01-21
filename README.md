@@ -85,8 +85,8 @@ So we have a bitcoin in our LN wallet, lets open some channels..
 Or first create two more lnd nodes - Alice and Bob
 
 ```bash
-docker-compose -f docker-compose.yaml -f docker-compose-alice.yaml run -d --name alice lnd
-docker-compose -f docker-compose.yaml -f docker-compose-bob.yaml run -d --name bob lnd
+docker-compose -f docker-compose.yaml -f docker-compose-alice.yaml run -d --name alice -p 10010:10009 lnd
+docker-compose -f docker-compose.yaml -f docker-compose-bob.yaml run -d --name bob -p 10011:10009 lnd
 ```
 
 ##### Alice
