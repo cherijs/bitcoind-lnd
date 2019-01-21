@@ -114,9 +114,28 @@ class LndNode(object):
     def list_channels(self):
         try:
             response = self.rpc.stub.ListChannels(ln.ListChannelsRequest())
-            return response.channels
+            return response
         except Exception as e:
             logger.exception(e)
+
+    def list_pending_channels(self):
+        try:
+            response = self.rpc.stub.PendingChannels(ln.PendingChannelsRequest())
+            return response
+        except Exception as e:
+            logger.exception(e)
+
+    def channel_exists_with_node(self, pubkey, pending=True):
+        connected_channel_list = list(self.list_channels().channels)
+        connected_pub_keys = set(ch.remote_pubkey for ch in connected_channel_list)
+        pub_keys = connected_pub_keys
+
+        if pending:
+            pending_channels_list = list(self.list_pending_channels().pending_open_channels)
+            pending_pub_keys = set(chan.channel.remote_node_pub for chan in pending_channels_list)
+            pub_keys = pub_keys | pending_pub_keys
+
+        return pubkey in pub_keys
 
     def add_invoice(self, memo='Pay me', ammount=0, expiry=3600):
         try:
@@ -156,6 +175,20 @@ class LndNode(object):
         except Exception as e:
             logger.exception(e)
 
+    def pay_invoice(self, pay_req):
+        invoice_details = self.decode_pay_request(pay_req)
+        try:
+            request = ln.SendRequest(
+                dest_string=invoice_details.destination,
+                amt=invoice_details.num_satoshis,
+                payment_hash_string=invoice_details.payment_hash,
+                final_cltv_delta=144  # final_cltv_delta=144 is default for lnd
+            )
+            response = self.rpc.stub.SendPaymentSync(request)
+            logger.warning(response)
+        except Exception as e:
+            logger.exception(e)
+
     def invoice_subscription(self, add_index):
         try:
             request = ln.InvoiceSubscription(
@@ -176,11 +209,22 @@ class LndNode(object):
             )
         )
 
+    def channel_balance(self):
+        try:
+            response = self.rpc.stub.ChannelBalance(ln.ChannelBalanceRequest())
+            return {
+                'node': self.displayName,
+                'balance': response.balance,
+                'pending_open_balance': response.pending_open_balance
+            }
+        except Exception as e:
+            logger.exception(e)
+
     def open_channel(self, **kwargs):
         # TODO check if channel already opened
         try:
             request = ln.OpenChannelRequest(**kwargs)
-            response = self.rpc.stub.OpenChannel(request)
+            response = self.rpc.stub.OpenChannelSync(request)
             return response
         except Exception as e:
             logger.exception(e)
@@ -205,22 +249,44 @@ if lnd_node.identity_pubkey not in bob_node.list_peers():
     bob_node.connect_peer(pubkey=lnd_node.getinfo().identity_pubkey, host='172.29.0.2')
 
 # Alice open channel to lnd
-logger.debug(lnd_node.list_channels())
+
+
 # https://api.lightning.community/#openchannelsync
-for resp in alice_node.open_channel(
+if not alice_node.channel_exists_with_node(lnd_node.identity_pubkey):
+    print(list(alice_node.open_channel(
         node_pubkey=bytes.fromhex(lnd_node.identity_pubkey),
         node_pubkey_string=lnd_node.identity_pubkey,
-        local_funding_amount=100000,  # The number of satoshis the wallet should commit to the channel
-        push_sat=1000,  # The number of satoshis to push to the remote side as part of the initial commitment state
-):
-    print(resp)
+        local_funding_amount=100000 + 9050,  # The number of satoshis the wallet should commit to the channel
+        push_sat=int(100000/2),  # The number of satoshis to push to the remote side as part of the initial commitment state
+    )))
+if not bob_node.channel_exists_with_node(lnd_node.identity_pubkey):
+    print(list(bob_node.open_channel(
+        node_pubkey=bytes.fromhex(lnd_node.identity_pubkey),
+        node_pubkey_string=lnd_node.identity_pubkey,
+        local_funding_amount=100000 + 9050,  # The number of satoshis the wallet should commit to the channel
+        push_sat=int(100000/2),  # The number of satoshis to push to the remote side as part of the initial commitment state
+    )))
 
-# logger.debug(node.list_invoices())
-# logger.debug(node.add_invoice(ammount=100))
+logger.debug(f'{lnd_node} Active channels: {len([c.active for c in lnd_node.list_channels().channels])}')
+logger.debug(f'{alice_node} Active channels: {len([c.active for c in alice_node.list_channels().channels])}')
+logger.debug(f'{bob_node} Active channels: {len([c.active for c in bob_node.list_channels().channels])}')
+
+logger.debug(alice_node.channel_balance())
+logger.debug(bob_node.channel_balance())
+
+
+# IMPORTANT to send som value thought channels, every channel need balance > then amount you have to send
+
+
+logger.debug(bob_node.add_invoice(ammount=10, memo='Bob wants 10 satoshi from alice'))
+
 # logger.debug(node.invoice_subscription(3))
-# logger.debug(node.decode_pay_request(
-#     'lntb1u1pwyzfh2pp5aw6te06r3lrtm8fddy0yptvm70l0z8vs2cjvkzgnph0lhe4lqnzsdqqcqzysxqyz5vq39h3nw9lenhr5ly8mmtjc4faqyq46pycfv4tekxey25cm2z0ehlhxc03lurwwpfh6pyu9a7pukgudp3dnxjeyn309493lqeyksy6sqsq0lyskc'))
-#
-# logger.debug(node.send_payment(
-#     'lntb1u1pwyzfh2pp5aw6te06r3lrtm8fddy0yptvm70l0z8vs2cjvkzgnph0lhe4lqnzsdqqcqzysxqyz5vq39h3nw9lenhr5ly8mmtjc4faqyq46pycfv4tekxey25cm2z0ehlhxc03lurwwpfh6pyu9a7pukgudp3dnxjeyn309493lqeyksy6sqsq0lyskc'))
-#
+
+if bob_node.list_invoices().invoices[len(bob_node.list_invoices().invoices)-1]:
+    payment_request = bob_node.list_invoices().invoices[len(bob_node.list_invoices().invoices)-1].payment_request
+    logger.info(payment_request)
+    print('Alice -> send payment to bobs request')
+    logger.debug(bob_node.decode_pay_request(payment_request))
+
+    # Alice sends bob some btc
+    logger.debug(alice_node.pay_invoice(payment_request))
