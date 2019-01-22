@@ -3,6 +3,7 @@ import time
 from unittest import TestCase
 
 from lnd import FAUCET_DOCKER, RpcClient, ALICE_DOCKER, BOB_DOCKER
+from utils import get_docker_ip
 
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s', )
 logger = logging.getLogger(__name__)
@@ -39,6 +40,10 @@ class TestRpcClient(TestCase):
         self.assertIs(True, self.connect('faucet').ping())
 
     def test_connect_peer(self):
+
+        alice_ip = get_docker_ip('alice')
+        bob_ip = get_docker_ip('bob')
+
         peers = self.connect('faucet').list_peers()
         if peers:
             logger.warning('Already connected, lets disconnect')
@@ -53,12 +58,12 @@ class TestRpcClient(TestCase):
         # $ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' alice
         alice_pubkey = self.connect('alice').identity_pubkey
         self.connect('faucet').connect_peer(pubkey=alice_pubkey,
-                                            host='172.29.0.5')
+                                            host=alice_ip)
 
         # $ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bob
         bob_pubkey = self.connect('bob').identity_pubkey
         self.connect('faucet').connect_peer(pubkey=bob_pubkey,
-                                            host='172.29.0.4')
+                                            host=bob_ip)
 
         time.sleep(1)
         self.assertEqual(2, len(self.connect('faucet').list_peers()))

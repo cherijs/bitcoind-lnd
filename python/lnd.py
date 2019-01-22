@@ -6,6 +6,7 @@ import grpc
 
 import rpc_pb2 as ln
 import rpc_pb2_grpc as lnrpc
+from utils import get_docker_ip
 
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s', )
 logger = logging.getLogger('main')
@@ -246,7 +247,11 @@ class RpcClient(object):
             return []
 
 
-def start():
+def test():
+    # alice_ip = get_docker_ip('alice')
+    # bob_ip = get_docker_ip('bob')
+    lnd_ip = get_docker_ip('lnd')
+
     lnd_node = RpcClient(FAUCET_DOCKER)
     alice_node = RpcClient(ALICE_DOCKER)
     bob_node = RpcClient(BOB_DOCKER)
@@ -258,11 +263,11 @@ def start():
 
     # Connect Alice to LND node
     if lnd_node.identity_pubkey not in alice_node.list_peers():
-        alice_node.connect_peer(pubkey=lnd_node.getinfo().identity_pubkey, host='172.29.0.2')
+        alice_node.connect_peer(pubkey=lnd_node.getinfo().identity_pubkey, host=lnd_ip)
 
     # Connect Bob to LND node
     if lnd_node.identity_pubkey not in bob_node.list_peers():
-        bob_node.connect_peer(pubkey=lnd_node.getinfo().identity_pubkey, host='172.29.0.2')
+        bob_node.connect_peer(pubkey=lnd_node.getinfo().identity_pubkey, host=lnd_ip)
 
     # Alice open channel to lnd
 
