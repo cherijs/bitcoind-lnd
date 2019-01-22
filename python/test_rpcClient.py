@@ -15,7 +15,7 @@ class TestRpcClient(TestCase):
     #     self.alice_node = RpcClient(ALICE_DOCKER)
     #     self.bob_node = RpcClient(BOB_DOCKER)
 
-    def connect(self, node):
+    def client(self, node):
         """
 
         :rtype: RpcClient
@@ -37,41 +37,41 @@ class TestRpcClient(TestCase):
         return current_node
 
     def test_ping(self):
-        self.assertIs(True, self.connect('faucet').ping())
+        self.assertIs(True, self.client('faucet').ping())
 
     def test_connect_peer(self):
 
         alice_ip = get_docker_ip('alice')
         bob_ip = get_docker_ip('bob')
 
-        peers = self.connect('faucet').list_peers()
+        peers = self.client('faucet').list_peers()
         if peers:
             logger.warning('Already connected, lets disconnect')
             for peer in peers:
                 # logger.debug(f'Disconnecting: {peer}')
-                self.connect('faucet').disconnect_from_peer(peer)
-            self.assertEqual([], self.connect('faucet').list_peers())
+                self.client('faucet').disconnect_from_peer(peer)
+            self.assertEqual([], self.client('faucet').list_peers())
 
         time.sleep(1)
         logger.info('Lets connect.. to alice an bob')
 
         # $ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' alice
-        alice_pubkey = self.connect('alice').identity_pubkey
-        self.connect('faucet').connect_peer(pubkey=alice_pubkey,
-                                            host=alice_ip)
+        alice_pubkey = self.client('alice').identity_pubkey
+        self.client('faucet').connect_peer(pubkey=alice_pubkey,
+                                           host=alice_ip)
 
         # $ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bob
-        bob_pubkey = self.connect('bob').identity_pubkey
-        self.connect('faucet').connect_peer(pubkey=bob_pubkey,
-                                            host=bob_ip)
+        bob_pubkey = self.client('bob').identity_pubkey
+        self.client('faucet').connect_peer(pubkey=bob_pubkey,
+                                           host=bob_ip)
 
         time.sleep(1)
-        self.assertEqual(2, len(self.connect('faucet').list_peers()))
+        self.assertEqual(2, len(self.client('faucet').list_peers()))
 
-        # logger.debug(self.connect('faucet').getnode_info(alice_pubkey))
+        # logger.debug(self.client('faucet').getnode_info(alice_pubkey))
 
     # def test_list_peers(self):
-    #     print(self.connect('faucet').list_peers())
+    #     print(self.client('faucet').list_peers())
 
     # def test_getinfo(self):
     #     self.fail()
