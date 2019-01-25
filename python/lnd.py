@@ -212,11 +212,30 @@ class RpcClient(object):
             logger.exception(e)
 
     def connect_peer(self, pubkey, host, permanent=False):
-        return self.client.ConnectPeer(
-            ln.ConnectPeerRequest(
-                addr=ln.LightningAddress(pubkey=pubkey, host=host), perm=permanent
-            )
-        )
+
+        assert host, "Host is empty."
+        assert pubkey, "Pubkey is empty."
+
+        try:
+            addr = ln.LightningAddress(pubkey=pubkey, host=host)
+        except Exception as e:
+            raise AssertionError(f'Cant create LightningAddress from host:{host} ->  pubkey:{pubkey}')
+
+        try:
+            request = ln.ConnectPeerRequest(addr=addr, perm=permanent)
+        except Exception as e:
+            raise AssertionError('Cant create peer request')
+
+        try:
+            response = self.client.ConnectPeer(request)
+            return response
+        except Exception as e:
+            if str(e.details()).startswith('already connected to peer'):
+                pass
+            else:
+                raise AssertionError(f'Can\'t connect to {host}! {e.details()}')
+
+        return
 
     def disconnect_from_peer(self, pubkey):
         return self.client.DisconnectPeer(

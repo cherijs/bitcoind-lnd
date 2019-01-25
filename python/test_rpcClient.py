@@ -10,10 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class TestRpcClient(TestCase):
-    # def setUp(self):
-    #     self.lnd_node = RpcClient(LND_DOCKER)
-    #     self.alice_node = RpcClient(ALICE_DOCKER)
-    #     self.bob_node = RpcClient(BOB_DOCKER)
+    def setUp(self):
+        self.alice_ip = get_docker_ip('alice')
+        self.bob_ip = get_docker_ip('bob')
+        self.faucet_ip = get_docker_ip('faucet')
+        # self.lnd_node = RpcClient(LND_DOCKER)
+        # self.alice_node = RpcClient(ALICE_DOCKER)
+        # self.bob_node = RpcClient(BOB_DOCKER)
 
     def client(self, node):
         """
@@ -39,39 +42,52 @@ class TestRpcClient(TestCase):
     def test_ping(self):
         self.assertIs(True, self.client('faucet').ping())
 
-    def test_connect_peer(self):
-
-        alice_ip = get_docker_ip('alice')
-        bob_ip = get_docker_ip('bob')
-
+    def test_disconnect_peer(self):
         peers = self.client('faucet').list_peers()
         if peers:
             logger.warning('Already connected, lets disconnect')
             for peer in peers:
-                # logger.debug(f'Disconnecting: {peer}')
+                logger.debug(f'Disconnecting: {peer}')
                 self.client('faucet').disconnect_from_peer(peer)
             self.assertEqual([], self.client('faucet').list_peers())
-
+        else:
+            try:
+                self.connect_to_peer('faucet', 'alice')
+                self.test_disconnect_peer()
+            except Exception as e:
+                self.fail(e)
         time.sleep(1)
-        logger.info('Lets connect.. to alice an bob')
 
-        # $ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' alice
-        alice_pubkey = self.client('alice').identity_pubkey
-        self.client('faucet').connect_peer(pubkey=alice_pubkey,
-                                           host=alice_ip)
+    def test_connect_peer(self):
+        try:
+            self.connect_to_peer('faucet', 'alice')
+        except Exception as e:
+            self.fail(e)
 
-        # $ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bob
-        bob_pubkey = self.client('bob').identity_pubkey
-        self.client('faucet').connect_peer(pubkey=bob_pubkey,
-                                           host=bob_ip)
-
-        time.sleep(1)
-        self.assertEqual(2, len(self.client('faucet').list_peers()))
-
+        try:
+            self.connect_to_peer('faucet', 'bob')
+        except Exception as e:
+            self.fail(e)
         # logger.debug(self.client('faucet').getnode_info(alice_pubkey))
 
-    # def test_list_peers(self):
-    #     print(self.client('faucet').list_peers())
+    def connect_to_peer(self, who, to):
+        logger.info('Lets connect.. to ' + to)
+        to_pubkey = self.client(to).identity_pubkey
+
+        # TODO make async get_docker_ip
+        tip = f'{to}_ip'
+        ip = getattr(self, tip)
+
+        assert ip, f'Can\'t get {to} ip'
+
+        return self.client(who).connect_peer(pubkey=to_pubkey, host=ip)
+
+    def test_list_peers(self):
+        try:
+            self.connect_to_peer('faucet', 'alice')
+        except Exception as e:
+            self.fail(e)
+        logger.debug(self.client('faucet').list_peers())
 
     # def test_getinfo(self):
     #     self.fail()
