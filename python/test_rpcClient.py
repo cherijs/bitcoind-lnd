@@ -13,7 +13,7 @@ class TestRpcClient(TestCase):
     def setUp(self):
         self.alice_ip = get_docker_ip('alice')
         self.bob_ip = get_docker_ip('bob')
-        self.faucet_ip = get_docker_ip('faucet')
+        self.faucet_ip = get_docker_ip('lnd')
         # self.lnd_node = RpcClient(LND_DOCKER)
         # self.alice_node = RpcClient(ALICE_DOCKER)
         # self.bob_node = RpcClient(BOB_DOCKER)
@@ -129,10 +129,14 @@ class TestRpcClient(TestCase):
         except Exception as e:
             self.fail(e)
 
+    def test_list_channels(self):
+        try:
+            channels = self.client('faucet').list_channels()
+            self.assertIsNotNone(channels.channels)
+        except Exception as e:
+            self.fail(e)
+
     # def test_invoice_subscription(self):
-    #     self.fail()
-    #
-    # def test_list_channels(self):
     #     self.fail()
     #
     # def test_list_pending_channels(self):
