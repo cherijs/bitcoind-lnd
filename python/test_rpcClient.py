@@ -93,9 +93,18 @@ class TestRpcClient(TestCase):
         except Exception as e:
             self.fail(e)
 
-    # def test_getinfo(self):
-    #     self.fail()
-    #
+    def test_getinfo(self):
+        try:
+            self.connect_to_peer('faucet', 'alice')
+        except Exception as e:
+            self.fail(e)
+
+        try:
+            info = self.client('faucet').getinfo()
+            self.assertTrue(info)
+        except Exception as e:
+            self.fail(e)
+
     # def test_wallet_balance(self):
     #     self.fail()
     #
