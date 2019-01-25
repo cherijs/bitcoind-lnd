@@ -151,6 +151,30 @@ class TestRpcClient(TestCase):
         except Exception as e:
             self.fail(e)
 
+    def test_open_channel(self):
+        try:
+            self.connect_to_peer('faucet', 'alice')
+        except Exception as e:
+            self.fail(e)
+
+        try:
+            channel_point = self.client('alice').open_channel(
+                node_pubkey=bytes.fromhex(self.client('faucet').identity_pubkey),
+                node_pubkey_string=self.client('faucet').identity_pubkey,
+                local_funding_amount=100000 + 9050,
+                push_sat=int(100000 / 2))
+
+            # {
+            #     "funding_txid_bytes": <bytes>,
+            #     "funding_txid_str": <string>,
+            #     "output_index": <uint32>,
+            # }
+
+            logger.debug(channel_point)
+            self.assertIsNotNone(channel_point)
+        except Exception as e:
+            self.fail(e)
+
     # def test_invoice_subscription(self):
     #     self.fail()
     #
@@ -167,7 +191,4 @@ class TestRpcClient(TestCase):
     #     self.fail()
     #
     # def test_pay_invoice(self):
-    #     self.fail()
-    #
-    # def test_open_channel(self):
     #     self.fail()
