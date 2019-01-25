@@ -136,12 +136,15 @@ class TestRpcClient(TestCase):
         except Exception as e:
             self.fail(e)
 
+    def test_list_pending_channels(self):
+        try:
+            channels = self.client('faucet').list_pending_channels()
+            self.assertIsNotNone(channels.pending_open_channels)
+        except Exception as e:
+            self.fail(e)
+
     # def test_invoice_subscription(self):
     #     self.fail()
-    #
-    # def test_list_pending_channels(self):
-    #     self.fail()
-    #
     #
     # def test_add_invoice(self):
     #     self.fail()
