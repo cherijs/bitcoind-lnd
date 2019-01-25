@@ -105,9 +105,30 @@ class TestRpcClient(TestCase):
         except Exception as e:
             self.fail(e)
 
-    # def test_wallet_balance(self):
-    #     self.fail()
-    #
+    def test_wallet_balance(self):
+        try:
+            self.connect_to_peer('faucet', 'alice')
+        except Exception as e:
+            self.fail(e)
+
+        try:
+            balance = self.client('faucet').wallet_balance()
+            self.assertTrue(balance.get('total_balance'))
+        except Exception as e:
+            self.fail(e)
+
+    def test_channel_exists_with_node(self):
+        try:
+            self.connect_to_peer('faucet', 'alice')
+        except Exception as e:
+            self.fail(e)
+
+        try:
+            channel = self.client('faucet').channel_exists_with_node(self.client('alice').identity_pubkey)
+            self.assertIsNotNone(channel)
+        except Exception as e:
+            self.fail(e)
+
     # def test_invoice_subscription(self):
     #     self.fail()
     #
@@ -117,8 +138,6 @@ class TestRpcClient(TestCase):
     # def test_list_pending_channels(self):
     #     self.fail()
     #
-    # def test_channel_exists_with_node(self):
-    #     self.fail()
     #
     # def test_add_invoice(self):
     #     self.fail()
