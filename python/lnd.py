@@ -263,8 +263,7 @@ class RpcClient(object):
             except Exception as e:
                 logger.exception(e)
         else:
-            logger.warning('Channel already opened')
-            return None
+            raise AssertionError('Channel already opened')
 
 
 def test():

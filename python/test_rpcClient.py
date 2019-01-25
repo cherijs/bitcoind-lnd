@@ -1,6 +1,9 @@
 import logging
 import time
+import warnings
 from unittest import TestCase
+
+from bitcoinrpc.authproxy import AuthServiceProxy
 
 from lnd import FAUCET_DOCKER, RpcClient, ALICE_DOCKER, BOB_DOCKER
 from utils import get_docker_ip
@@ -9,7 +12,20 @@ logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s', )
 logger = logging.getLogger(__name__)
 
 
+# logging.getLogger("BitcoinRPC").setLevel(logging.WARNING)
+
+
+def ignore_warnings(test_func):
+    def do_test(self, *args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ResourceWarning)
+            test_func(self, *args, **kwargs)
+
+    return do_test
+
+
 class TestRpcClient(TestCase):
+    @ignore_warnings
     def setUp(self):
         self.alice_ip = get_docker_ip('alice')
         self.bob_ip = get_docker_ip('bob')
@@ -17,6 +33,11 @@ class TestRpcClient(TestCase):
         # self.lnd_node = RpcClient(LND_DOCKER)
         # self.alice_node = RpcClient(ALICE_DOCKER)
         # self.bob_node = RpcClient(BOB_DOCKER)
+        # rpc_user and rpc_password are set in the bitcoin.conf file
+        rpc_user = 'test'
+        rpc_password = 'test'
+        port = 18443
+        self.rpc_host = "http://%s:%s@127.0.0.1:%s" % (rpc_user, rpc_password, port)
 
     def client(self, node):
         """
@@ -38,6 +59,12 @@ class TestRpcClient(TestCase):
             current_node = getattr(self, node)
 
         return current_node
+
+    @ignore_warnings
+    def test_btc(self):
+        rpc_connection = AuthServiceProxy(self.rpc_host)
+        get_wallet_info = rpc_connection.getwalletinfo()
+        self.assertIsNotNone(get_wallet_info)
 
     def test_ping(self):
         self.assertIs(True, self.client('faucet').ping())
@@ -151,6 +178,7 @@ class TestRpcClient(TestCase):
         except Exception as e:
             self.fail(e)
 
+    @ignore_warnings
     def test_open_channel(self):
         try:
             self.connect_to_peer('faucet', 'alice')
@@ -172,6 +200,18 @@ class TestRpcClient(TestCase):
 
             logger.debug(channel_point)
             self.assertIsNotNone(channel_point)
+        except Exception as e:
+            self.assertEqual('Channel already opened', e.args[0])
+
+        # GENERATE 10 blocks, to confirm channel
+        rpc_connection = AuthServiceProxy(self.rpc_host)
+        blocks = rpc_connection.generate(10)
+        self.assertGreaterEqual(len(blocks), 10)
+
+        try:
+            channels = self.client('alice').list_channels()
+            self.assertIsNotNone(channels.channels)
+            self.assertTrue(self.client('faucet').identity_pubkey in set(ch.remote_pubkey for ch in channels.channels))
         except Exception as e:
             self.fail(e)
 
