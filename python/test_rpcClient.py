@@ -143,6 +143,14 @@ class TestRpcClient(TestCase):
         except Exception as e:
             self.fail(e)
 
+    def test_channel_balance(self):
+        try:
+            balance = self.client('faucet').channel_balance()
+            # logger.debug(balance)
+            self.assertIsNotNone(balance.get('balance'))
+        except Exception as e:
+            self.fail(e)
+
     # def test_invoice_subscription(self):
     #     self.fail()
     #
@@ -159,10 +167,6 @@ class TestRpcClient(TestCase):
     #     self.fail()
     #
     # def test_pay_invoice(self):
-    #     self.fail()
-    #
-    #
-    # def test_channel_balance(self):
     #     self.fail()
     #
     # def test_open_channel(self):
