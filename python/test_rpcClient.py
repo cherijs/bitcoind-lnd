@@ -68,7 +68,6 @@ class TestRpcClient(TestCase):
             self.connect_to_peer('faucet', 'bob')
         except Exception as e:
             self.fail(e)
-        # logger.debug(self.client('faucet').getnode_info(alice_pubkey))
 
     def connect_to_peer(self, who, to):
         logger.info('Lets connect.. to ' + to)
@@ -87,7 +86,12 @@ class TestRpcClient(TestCase):
             self.connect_to_peer('faucet', 'alice')
         except Exception as e:
             self.fail(e)
-        logger.debug(self.client('faucet').list_peers())
+
+        try:
+            peers = self.client('faucet').list_peers()
+            self.assertGreater(len(peers), 0)
+        except Exception as e:
+            self.fail(e)
 
     # def test_getinfo(self):
     #     self.fail()
