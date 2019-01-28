@@ -6,7 +6,6 @@ import grpc
 
 import rpc_pb2 as ln
 import rpc_pb2_grpc as lnrpc
-from utils import get_docker_ip
 
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s', )
 logger = logging.getLogger('main')
@@ -268,8 +267,10 @@ class RpcClient(object):
 
     def open_channel(self, **kwargs):
         # TODO check if channel already opened
-        if not self.channel_exists_with_node(kwargs.get('node_pubkey_string')):
+        if not self.channel_exists_with_node(kwargs.get('node_pubkey_string')) or kwargs.get('force'):
             try:
+                if kwargs.get('force'):
+                    del kwargs['force']
                 request = ln.OpenChannelRequest(**kwargs)
                 response = self.client.OpenChannelSync(request)
                 return response

@@ -249,6 +249,22 @@ class TestRpcClient(TestCase):
             self.fail(e)
 
     @ignore_warnings
+    def open_channel(self, node, target, local_funding=100000000, remote_funding=0, force=False):
+        try:
+            commit_fee = 9050
+            channel_point = self.client(node).open_channel(
+                node_pubkey=bytes.fromhex(self.client(target).identity_pubkey),
+                node_pubkey_string=self.client(target).identity_pubkey,
+                local_funding_amount=int(0.1 * local_funding),
+                push_sat=int(remote_funding), force=force)
+            self.assertIsNotNone(channel_point)
+            return True
+        except Exception as e:
+            logger.debug(e.args[0])
+            self.assertEqual('Channel already opened', e.args[0])
+            return False
+
+    @ignore_warnings
     def test_open_channel(self):
         try:
             self.connect_to_peer('faucet', 'alice')
@@ -260,31 +276,11 @@ class TestRpcClient(TestCase):
         self.send_btc_to_node('bob', amount=100000000)
 
         # alice and bob opens one wau funded channels with faucet
-        generate_blocks = False
-        try:
-            commit_fee = 9050
-            channel_point = self.client('alice').open_channel(
-                node_pubkey=bytes.fromhex(self.client('faucet').identity_pubkey),
-                node_pubkey_string=self.client('faucet').identity_pubkey,
-                local_funding_amount=int(0.1 * 100000000),
-                push_sat=0)
-            self.assertIsNotNone(channel_point)
-            generate_blocks = True
+        generate_blocks = self.open_channel('alice', 'faucet', 100000000)
+        generate_blocks = True if self.open_channel('bob', 'faucet', 100000000,
+                                                    remote_funding=200000) else generate_blocks
 
-        except Exception as e:
-            self.assertEqual('Channel already opened', e.args[0])
-
-        try:
-            commit_fee = 9050
-            channel_point = self.client('bob').open_channel(
-                node_pubkey=bytes.fromhex(self.client('faucet').identity_pubkey),
-                node_pubkey_string=self.client('faucet').identity_pubkey,
-                local_funding_amount=int(0.1 * 100000000),
-                push_sat=0)
-            self.assertIsNotNone(channel_point)
-            generate_blocks = True
-        except Exception as e:
-            self.assertEqual('Channel already opened', e.args[0])
+        # generate_blocks = True if self.open_channel('faucet', 'bob', 200000) else generate_blocks
 
         if generate_blocks:
             # GENERATE 10 blocks, to confirm channel
@@ -352,5 +348,9 @@ class TestRpcClient(TestCase):
             print('Alice -> send payment to bobs request')
             logger.debug(self.client('bob').decode_pay_request(payment_request))
 
-            # Alice sends bob some btc
-            logger.debug(self.client('alice').pay_invoice(payment_request))
+            # Alice try to sends bob some btc
+            try:
+                payment = self.client('alice').pay_invoice(payment_request)
+                logger.debug(payment)
+            except Exception as e:
+                self.fail(e)
