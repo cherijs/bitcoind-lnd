@@ -238,10 +238,12 @@ class TestRpcClient(TestCase):
             if not balance.get('confirmed_balance') or balance.get('confirmed_balance') < amount:
                 faucet_address = self.client(node).address().address
                 #     send bitcoin to faucet_address
+                logger.debug(amount / 100000000 - balance.get('confirmed_balance') / 100000000)
                 rpc_connection = AuthServiceProxy(self.rpc_host)
-                tx = rpc_connection.sendtoaddress(faucet_address,
-                                                  amount / 100000000 - balance.get('confirmed_balance') / 100000000)
-                blocks = rpc_connection.generate(3)
+                txid = rpc_connection.sendtoaddress(faucet_address, float(
+                    "{0:.8f}".format(amount / 100000000 - balance.get('confirmed_balance') / 100000000))
+                                                    )
+                blocks = rpc_connection.generate(10)
                 self.send_btc_to_node(node)
         except Exception as e:
             self.fail(e)
@@ -258,6 +260,7 @@ class TestRpcClient(TestCase):
         self.send_btc_to_node('bob', amount=100000000)
 
         # alice and bob opens one wau funded channels with faucet
+        generate_blocks = False
         try:
             commit_fee = 9050
             channel_point = self.client('alice').open_channel(
@@ -266,10 +269,11 @@ class TestRpcClient(TestCase):
                 local_funding_amount=int(0.1 * 100000000),
                 push_sat=0)
             self.assertIsNotNone(channel_point)
-
+            generate_blocks = True
 
         except Exception as e:
             self.assertEqual('Channel already opened', e.args[0])
+
         try:
             commit_fee = 9050
             channel_point = self.client('bob').open_channel(
@@ -278,16 +282,25 @@ class TestRpcClient(TestCase):
                 local_funding_amount=int(0.1 * 100000000),
                 push_sat=0)
             self.assertIsNotNone(channel_point)
+            generate_blocks = True
         except Exception as e:
             self.assertEqual('Channel already opened', e.args[0])
 
-        # GENERATE 10 blocks, to confirm channel
-        rpc_connection = AuthServiceProxy(self.rpc_host)
-        blocks = rpc_connection.generate(10)
-        self.assertGreaterEqual(len(blocks), 10)
+        if generate_blocks:
+            # GENERATE 10 blocks, to confirm channel
+            rpc_connection = AuthServiceProxy(self.rpc_host)
+            blocks = rpc_connection.generate(10)
+            self.assertGreaterEqual(len(blocks), 10)
 
         try:
             channels = self.client('alice').list_channels()
+            self.assertIsNotNone(channels.channels)
+            self.assertTrue(self.client('faucet').identity_pubkey in set(ch.remote_pubkey for ch in channels.channels))
+        except Exception as e:
+            self.fail(e)
+
+        try:
+            channels = self.client('bob').list_channels()
             self.assertIsNotNone(channels.channels)
             self.assertTrue(self.client('faucet').identity_pubkey in set(ch.remote_pubkey for ch in channels.channels))
         except Exception as e:
