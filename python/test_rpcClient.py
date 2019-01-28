@@ -306,20 +306,51 @@ class TestRpcClient(TestCase):
         except Exception as e:
             self.fail(e)
 
+    def test_list_invoices(self):
+        try:
+            bobs_invoices = self.client('bob').list_invoices().invoices
+            logger.debug(bobs_invoices)
+            self.assertIsNotNone(bobs_invoices)
+        except Exception as e:
+            self.fail(e)
+
+    def test_add_invoice(self):
+        try:
+            bobs_invoices = self.client('bob').list_invoices().invoices
+            self.assertIsNotNone(bobs_invoices)
+        except Exception as e:
+            self.fail(e)
+
+        if not bobs_invoices:
+            try:
+                response = self.client('bob').add_invoice(ammount=10, memo='Bob wants 10 satoshi')
+                logger.info(response.payment_request)
+                self.assertIsNotNone(response.payment_request)
+            except Exception as e:
+                self.fail(e)
+
     # def test_invoice_subscription(self):
     #     self.fail()
     #
-    # def test_add_invoice(self):
-    #     self.fail()
-    #
-    # def test_list_invoices(self):
-    #     self.fail()
-    #
+
     # def test_decode_pay_request(self):
     #     self.fail()
     #
     # def test_send_payment(self):
     #     self.fail()
     #
-    # def test_pay_invoice(self):
-    #     self.fail()
+    def test_pay_invoice(self):
+        try:
+            bobs_invoices = self.client('bob').list_invoices().invoices
+            self.assertIsNotNone(bobs_invoices)
+        except Exception as e:
+            self.fail(e)
+
+        if bobs_invoices and bobs_invoices[len(bobs_invoices) - 1]:
+            payment_request = bobs_invoices[len(bobs_invoices) - 1].payment_request
+            logger.info(payment_request)
+            print('Alice -> send payment to bobs request')
+            logger.debug(self.client('bob').decode_pay_request(payment_request))
+
+            # Alice sends bob some btc
+            logger.debug(self.client('alice').pay_invoice(payment_request))
