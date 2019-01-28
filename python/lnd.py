@@ -16,6 +16,8 @@ FAUCET_DOCKER = {
     'node_host': 'localhost:9009',
     'rpc_host': 'localhost:10009',
     'tls_cert': '/Users/cherijs/.docker_volumes/.lnd/tls.cert',
+    'wallet': '/Users/cherijs/.docker_volumes/.lnd/data/chain/bitcoin/regtest/wallet.db',
+    'logs': '/Users/cherijs/.docker_volumes/.lnd/logs/',
     'admin_macaroon': '/Users/cherijs/.docker_volumes/.lnd/data/chain/bitcoin/regtest/admin.macaroon'
 }
 
@@ -24,6 +26,8 @@ ALICE_DOCKER = {
     'node_host': 'localhost:9010',
     'rpc_host': 'localhost:10010',
     'tls_cert': '/Users/cherijs/.docker_volumes/simnet/alice/tls.cert',
+    'wallet': '/Users/cherijs/.docker_volumes/simnet/alice/data/chain/bitcoin/regtest/wallet.db',
+    'logs': '/Users/cherijs/.docker_volumes/simnet/alice/logs/',
     'admin_macaroon': '/Users/cherijs/.docker_volumes/simnet/alice/data/chain/bitcoin/regtest/admin.macaroon'
 }
 
@@ -32,6 +36,8 @@ BOB_DOCKER = {
     'node_host': 'localhost:9011',
     'rpc_host': 'localhost:10011',
     'tls_cert': '/Users/cherijs/.docker_volumes/simnet/bob/tls.cert',
+    'wallet': '/Users/cherijs/.docker_volumes/simnet/bob/data/chain/bitcoin/regtest/wallet.db',
+    'logs': '/Users/cherijs/.docker_volumes/simnet/bob/logs/',
     'admin_macaroon': '/Users/cherijs/.docker_volumes/simnet/bob/data/chain/bitcoin/regtest/admin.macaroon'
 }
 
@@ -93,6 +99,13 @@ class RpcClient(object):
         except Exception as e:
             logger.exception(e)
             return []
+
+    def address(self):
+        try:
+            response = self.client.NewAddress(ln.NewAddressRequest())
+            return response
+        except Exception as e:
+            logger.exception(e)
 
     def getinfo(self):
         try:

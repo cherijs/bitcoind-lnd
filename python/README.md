@@ -25,3 +25,11 @@ Compile the proto file
 
 After following these steps, two files rpc_pb2.py and rpc_pb2_grpc.py will be generated. These files will be imported in your project anytime you use Python gRPC.
 
+###To start all dockers from root folder run command:
+
+`docker-compose up -d && docker-compose -f docker-compose.yaml -f docker-compose-alice.yaml run -d --name alice -p 
+10010:10009 -p 9010:9735 lnd && docker-compose -f docker-compose.yaml -f docker-compose-bob.yaml run -d --name bob -p 10011:10009 -p 9011:9735 lnd`
+
+###To stop:
+
+`docker-compose down`

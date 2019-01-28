@@ -6,22 +6,22 @@ services:
     container_name: btc
     restart: always
     expose:
-    - "8333"
-    - "28333"
-    - "28332"
-    - "18333"
-    - "18332"
-    - "18532"
+      - "8333"
+      - "28333"
+      - "28332"
+      - "18333"
+      - "18332"
+      - "18532"
     ports:
-    - "8333:8333"
-    - "28333:28333"
-    - "28332:28332"
-    - "18333:18333"
-    - "18332:18332"
-    - "18443:18443"
+      - "8333:8333"
+      - "28333:28333"
+      - "28332:28332"
+      - "18333:18333"
+      - "18332:18332"
+      - "18443:18443"
     volumes:
-    - ./bitcoind/bitcoin.conf:/root/.bitcoin/bitcoin.conf
-    - bitcoin:/root/.bitcoin/ # data persistence
+      - ./bitcoind/bitcoin.conf:/root/.bitcoin/bitcoin.conf
+      - bitcoin:/root/.bitcoin/ # data persistence
 
 
   lnd:
@@ -30,20 +30,14 @@ services:
     container_name: lnd
     restart: always
     ports:
-    - "10009:10009"
-    - "9009:9735"
-#    - "9735:9735"
+      - "10009:10009"
+      - "9009:9735"
+    #    - "9735:9735"
     volumes:
-    - ./lnd/lnd.conf:/root/.lnd/lnd.conf
-    - bitcoin:/root/.bitcoin/
-    - lnd:/root/.lnd/ # data persistence
+      - ./lnd/lnd.conf:/root/.lnd/lnd.conf
+      - bitcoin:/root/.bitcoin/
+      - lnd:/root/.lnd/ # data persistence
     command:
-      # default cmd in Dockerfile
-#      --externalip=88.135.143.213
-#      --tlsextraip=88.135.143.213
-#      --adminmacaroonpath=/root/.lnd/admin.macaroon
-#      --readonlymacaroonpath=/root/.lnd/readonly.macaroon
-#      --invoicemacaroonpath=/root/.lnd/invoice.macaroon
       --noseedbackup
       --debuglevel=debug
       --maxpendingchannels=10
@@ -58,9 +52,14 @@ services:
       --bitcoind.rpcpass=test
       --bitcoind.zmqpubrawblock=tcp://btc:28332
       --bitcoind.zmqpubrawtx=tcp://btc:28333
-      --autopilot.active
-      --autopilot.maxchannels=5
-      --autopilot.allocation=0.6
+#      --externalip=88.135.143.213
+#      --tlsextraip=88.135.143.213
+#      --adminmacaroonpath=/root/.lnd/admin.macaroon
+#      --readonlymacaroonpath=/root/.lnd/readonly.macaroon
+#      --invoicemacaroonpath=/root/.lnd/invoice.macaroon
+#      --autopilot.active
+#      --autopilot.maxchannels=5
+#      --autopilot.allocation=0.6
 
 volumes:
   bitcoin:
