@@ -80,7 +80,7 @@ class TestRpcClient(TestCase):
     def setUp(self):
         alice_synced = False
         bob_synced = False
-        lnd_synced = False
+        faucet_synced = False
         while True:
             if not alice_synced:
                 alice_synced = self.synced_to_chain('alice')
@@ -88,14 +88,35 @@ class TestRpcClient(TestCase):
             if not bob_synced:
                 bob_synced = self.synced_to_chain('bob')
 
-            if not lnd_synced:
-                lnd_synced = self.synced_to_chain('lnd')
+            if not faucet_synced:
+                faucet_synced = self.synced_to_chain('faucet')
 
-            if alice_synced and bob_synced and lnd_synced:
+            if alice_synced and bob_synced and faucet_synced:
                 break
-            logger.error('LND not synced to chain! Generate more blocks?')
-            rpc_connection = AuthServiceProxy(self.rpc_host)
-            blocks = rpc_connection.generate(1)
+            logger.error('Nodes not synced to chain!')
+            # Stop LND service
+
+            if not alice_synced:
+                try:
+                    self.client('alice').stop()
+                except Exception as e:
+                    self.fail(e)
+
+            if not bob_synced:
+                try:
+                    self.client('bob').stop()
+                except Exception as e:
+                    self.fail(e)
+
+            if not faucet_synced:
+                try:
+                    self.client('faucet').stop()
+                except Exception as e:
+                    self.fail(e)
+
+            # Generate more blocks?
+            # rpc_connection = AuthServiceProxy(self.rpc_host)
+            # blocks = rpc_connection.generate(1)
             time.sleep(5)
 
     def client(self, node):
@@ -141,6 +162,7 @@ class TestRpcClient(TestCase):
             logger.warning('Already connected, lets disconnect')
             for peer in peers:
                 logger.debug(f'Disconnecting: {peer}')
+                # TODO all active channels with the peer need to be closed first
                 self.client('faucet').disconnect_from_peer(peer)
             self.assertEqual([], self.client('faucet').list_peers())
         else:
@@ -282,11 +304,11 @@ class TestRpcClient(TestCase):
 
         # generate_blocks = True if self.open_channel('faucet', 'bob', 200000) else generate_blocks
 
-        if generate_blocks:
-            # GENERATE 10 blocks, to confirm channel
-            rpc_connection = AuthServiceProxy(self.rpc_host)
-            blocks = rpc_connection.generate(10)
-            self.assertGreaterEqual(len(blocks), 10)
+        # if generate_blocks:
+        # GENERATE 10 blocks, to confirm channel
+        rpc_connection = AuthServiceProxy(self.rpc_host)
+        blocks = rpc_connection.generate(10)
+        self.assertGreaterEqual(len(blocks), 10)
 
         try:
             channels = self.client('alice').list_channels()

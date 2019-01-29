@@ -269,7 +269,7 @@ class RpcClient(object):
         # TODO check if channel already opened
         if not self.channel_exists_with_node(kwargs.get('node_pubkey_string')) or kwargs.get('force'):
             try:
-                if kwargs.get('force'):
+                if kwargs.get('force') is not None:
                     del kwargs['force']
                 request = ln.OpenChannelRequest(**kwargs)
                 response = self.client.OpenChannelSync(request)
@@ -278,3 +278,10 @@ class RpcClient(object):
                 logger.exception(e)
         else:
             raise AssertionError('Channel already opened')
+
+    def stop(self):
+        try:
+            response = self.client.StopDaemon(ln.StopRequest())
+            return response
+        except Exception as e:
+            logger.exception(e)
