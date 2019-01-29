@@ -265,8 +265,33 @@ class RpcClient(object):
         except Exception as e:
             logger.exception(e)
 
+    def close_peer_channels(self, peer, force):
+        connected_channel_list = list(self.list_channels().channels)
+        connected_channel_points = set(ch.channel_point for ch in connected_channel_list if ch.remote_pubkey == peer)
+        if connected_channel_points:
+            for channel_point in connected_channel_points:
+                # The outpoint (txid:index) of the funding transaction. With this value, Bob will be able to generate a signature for Alice’s version of the commitment transaction.
+                cp = ln.ChannelPoint(funding_txid_bytes=bytes(channel_point.split(':')[0], 'utf-8'),
+                                     funding_txid_str=u'{}'.format(channel_point.split(':')[0]),
+                                     output_index=int(channel_point.split(':')[1])
+                                     )
+                logger.debug(self.close_channel(channel_point=cp, force=force))
+
+    def close_channel(self, channel_point, force):
+        try:
+
+            request = ln.CloseChannelRequest(
+                channel_point=channel_point,
+                force=force,
+                target_conf=1,
+                # sat_per_byte=<int64>
+            )
+            response = self.client.CloseChannel(request)
+            return response
+        except Exception as e:
+            logger.exception(e)
+
     def open_channel(self, **kwargs):
-        # TODO check if channel already opened
         if not self.channel_exists_with_node(kwargs.get('node_pubkey_string')) or kwargs.get('force'):
             try:
                 if kwargs.get('force') is not None:

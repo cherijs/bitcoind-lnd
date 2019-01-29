@@ -156,6 +156,7 @@ class TestRpcClient(TestCase):
     def test_ping(self):
         self.assertIs(True, self.client('faucet').ping())
 
+    @ignore_warnings
     def test_disconnect_peer(self):
         peers = self.client('faucet').list_peers()
         if peers:
@@ -163,7 +164,20 @@ class TestRpcClient(TestCase):
             for peer in peers:
                 logger.debug(f'Disconnecting: {peer}')
                 # TODO all active channels with the peer need to be closed first
-                self.client('faucet').disconnect_from_peer(peer)
+                try:
+                    self.client('faucet').disconnect_from_peer(peer)
+                except Exception as e:
+                    if str(e.details()).endswith('all active channels with the peer need to be closed first'):
+                        self.client('faucet').close_peer_channels(peer=peer, force=True)
+                        rpc_connection = AuthServiceProxy(self.rpc_host)
+                        blocks = rpc_connection.generate(10)
+                        # try one more time
+                        time.sleep(1)
+                        self.test_disconnect_peer()
+                        break
+                    else:
+                        raise AssertionError(e.details())
+
             self.assertEqual([], self.client('faucet').list_peers())
         else:
             try:
@@ -310,6 +324,7 @@ class TestRpcClient(TestCase):
         blocks = rpc_connection.generate(10)
         self.assertGreaterEqual(len(blocks), 10)
 
+        time.sleep(1)
         try:
             channels = self.client('alice').list_channels()
             self.assertIsNotNone(channels.channels)
@@ -327,7 +342,7 @@ class TestRpcClient(TestCase):
     def test_list_invoices(self):
         try:
             bobs_invoices = self.client('bob').list_invoices().invoices
-            logger.debug(bobs_invoices)
+            # logger.debug(bobs_invoices)
             self.assertIsNotNone(bobs_invoices)
         except Exception as e:
             self.fail(e)
@@ -339,24 +354,16 @@ class TestRpcClient(TestCase):
         except Exception as e:
             self.fail(e)
 
-        if not bobs_invoices:
+        if not bobs_invoices or not bobs_invoices[len(bobs_invoices) - 1] or bobs_invoices[len(bobs_invoices) -
+                                                                                           1].state:
             try:
-                response = self.client('bob').add_invoice(ammount=10, memo='Bob wants 10 satoshi')
+                ammount = 10000
+                response = self.client('bob').add_invoice(ammount=ammount, memo=f'Bob wants {ammount} satoshi')
                 logger.info(response.payment_request)
                 self.assertIsNotNone(response.payment_request)
             except Exception as e:
                 self.fail(e)
 
-    # def test_invoice_subscription(self):
-    #     self.fail()
-    #
-
-    # def test_decode_pay_request(self):
-    #     self.fail()
-    #
-    # def test_send_payment(self):
-    #     self.fail()
-    #
     def test_pay_invoice(self):
         try:
             bobs_invoices = self.client('bob').list_invoices().invoices
@@ -364,7 +371,7 @@ class TestRpcClient(TestCase):
         except Exception as e:
             self.fail(e)
 
-        if bobs_invoices and bobs_invoices[len(bobs_invoices) - 1]:
+        if bobs_invoices and bobs_invoices[len(bobs_invoices) - 1] and not bobs_invoices[len(bobs_invoices) - 1].state:
             payment_request = bobs_invoices[len(bobs_invoices) - 1].payment_request
             logger.info(payment_request)
             print('Alice -> send payment to bobs request')
@@ -376,3 +383,18 @@ class TestRpcClient(TestCase):
                 logger.debug(payment)
             except Exception as e:
                 self.fail(e)
+        else:
+            logger.warning('No invoices')
+            self.test_add_invoice()
+            self.test_pay_invoice()
+
+    # def test_invoice_subscription(self):
+    #     self.fail()
+    #
+
+    # def test_decode_pay_request(self):
+    #     self.fail()
+    #
+    # def test_send_payment(self):
+    #     self.fail()
+    #
