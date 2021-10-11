@@ -30,7 +30,7 @@ services:
     ports:
       - "10009:10009"
       - "9009:9735"
-        - "9735:9735"
+      - "9735:9735"
     volumes:
       - ./lnd/lnd.conf:/root/.lnd/lnd.conf
       - bitcoin:/root/.bitcoin/
