@@ -20,7 +20,7 @@ services:
       --color=#4126a7
       --alias=Alice
       --bitcoin.active
-      --bitcoin.regtest
+      --bitcoin.testnet
       --bitcoin.node=bitcoind
       --bitcoind.rpchost=btc
       --bitcoind.rpcuser=test
