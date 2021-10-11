@@ -1,8 +1,7 @@
 version: '3'
 services:
   btc:
-    build: ./bitcoind
-    image: cherijs/bitcoind:latest
+    image: ruimarinho/bitcoin-core
     container_name: btc
     restart: always
     expose:
@@ -25,8 +24,7 @@ services:
 
 
   lnd:
-    build: ./lnd
-    image: cherijs/lnd:latest
+    image: lightninglabs/lnd:v0.12.0-beta
     container_name: lnd
     restart: always
     ports:
