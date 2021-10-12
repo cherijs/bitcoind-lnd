@@ -1,8 +1,7 @@
 version: '3'
 services:
   btc:
-    build: ./bitcoind
-    image: cherijs/bitcoind:latest
+    image: ruimarinho/bitcoin-core
     container_name: btc
     restart: always
     expose:
@@ -20,23 +19,22 @@ services:
       - "18332:18332"
       - "18443:18443"
     volumes:
-      - ./bitcoind/bitcoin.conf:/root/.bitcoin/bitcoin.conf
-      - bitcoin:/root/.bitcoin/ # data persistence
+      - ./bitcoind/bitcoin.conf:/bitcoin/.bitcoin/bitcoin.conf
+      - bitcoin:/bitcoin/.bitcoin/ # data persistence
 
 
   lnd:
-    build: ./lnd
-    image: cherijs/lnd:latest
+    image: lightninglabs/lnd:v0.12.0-beta
     container_name: lnd
     restart: always
     ports:
       - "10009:10009"
       - "9009:9735"
-    #    - "9735:9735"
+      - "9735:9735"
     volumes:
-      - ./lnd/lnd.conf:/root/.lnd/lnd.conf
-      - bitcoin:/root/.bitcoin/
-      - lnd:/root/.lnd/ # data persistence
+      - ./lnd/lnd.conf:/lnd/.lnd/lnd.conf
+      - bitcoin:/lnd/.bitcoin/
+      - lnd:/lnd/.lnd/ # data persistence
     command:
       --noseedbackup
       --debuglevel=debug
@@ -45,32 +43,22 @@ services:
       --color=#4126a7
       --alias=LND
       --bitcoin.active
-      --bitcoin.regtest
+      --bitcoin.testnet
       --bitcoin.node=bitcoind
       --bitcoind.rpchost=btc
       --bitcoind.rpcuser=test
       --bitcoind.rpcpass=test
       --bitcoind.zmqpubrawblock=tcp://btc:28332
       --bitcoind.zmqpubrawtx=tcp://btc:28333
-#      --externalip=88.135.143.213
-#      --tlsextraip=88.135.143.213
-#      --adminmacaroonpath=/root/.lnd/admin.macaroon
-#      --readonlymacaroonpath=/root/.lnd/readonly.macaroon
-#      --invoicemacaroonpath=/root/.lnd/invoice.macaroon
+      --externalip=88.135.143.213
+      --tlsextraip=88.135.143.213
+      --adminmacaroonpath=/lnd/.lnd/admin.macaroon
+      --readonlymacaroonpath=/lnd/.lnd/readonly.macaroon
+      --invoicemacaroonpath=/lnd/.lnd/invoice.macaroon
 #      --autopilot.active
 #      --autopilot.maxchannels=5
 #      --autopilot.allocation=0.6
 
 volumes:
   bitcoin:
-    driver: local
-    driver_opts:
-      type: none
-      device: "/Users/cherijs/.docker_volumes/.bitcoin"
-      o: bind
   lnd:
-    driver: local
-    driver_opts:
-      type: none
-      device: "/Users/cherijs/.docker_volumes/.lnd"
-      o: bind
