@@ -3,7 +3,7 @@ chardet==3.0.4
 googleapis-common-protos==1.5.6
 grpcio==1.18.0
 idna==2.8
-protobuf==3.6.1
+protobuf==3.15.0
 python-bitcoinrpc==1.0
 requests==2.21.0
 six==1.12.0
